@@ -1,0 +1,131 @@
+<html>
+  <head>
+    <title>Face Detection on local video with MediaPipe</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+      crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+      crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"
+      crossorigin="anonymous"></script>
+    <style>
+        input{
+            display: block;
+        }
+        input::file-selector-button {
+            font-weight: bold;
+            color: white;
+            background-color: dodgerblue;
+            padding: 0.5em;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 5px 1px rgba(0,0,0,0.1);
+            border-radius: 3px;
+        }
+        .shown{
+            display: block !important;
+        }
+    </style>
+  </head>
+
+  <body>
+    
+    <video controls id="video-tag" hidden>
+      <source src="" id="source-tag" />
+    </video>
+
+    <canvas class="output_canvas" width="1280px" height="720px" hidden></canvas>
+    <input type="file" accept="video/*" id="input-tag">
+    <script type="module">
+      const videoElement = document.getElementById('video-tag')
+      const source = document.getElementById('source-tag')
+      const inputTag = document.getElementById('input-tag')
+      const canvasElement = document.getElementsByClassName('output_canvas')[0];
+      const canvasCtx = canvasElement.getContext('2d');
+
+      /**
+       * Function to execute once the results from the MediaPipe framework are received
+       */
+      function onResults(results) {
+        // Draw the overlays.
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(
+          results.image, 0, 0, canvasElement.width, canvasElement.height);
+        if (results.detections.length > 0) {
+          drawRectangle(
+            canvasCtx, results.detections[0].boundingBox,
+            { color: 'white', lineWidth: 2, fillColor: '#00000000' });
+          drawLandmarks(canvasCtx, results.detections[0].landmarks, {
+            color: 'lightblue',
+            radius: 1,
+          });
+        }
+        canvasCtx.restore();
+      }
+
+      /**
+       * Function to read the given file as input to data URL, and then register a callback 
+       * to execute once the file is loaded
+       */
+      function readVideo(event) {
+        if (event.target.files && event.target.files[0]) {
+          var reader = new FileReader();
+
+          reader.onload = onFileLoad
+          reader.readAsDataURL(event.target.files[0])
+        }
+      }
+
+      /**
+       * Function with steps to perform once the video file is loaded. This will register a function
+       * to execute for each Video Frame received from the HTMLVideoElement playback
+       */
+      async function onFileLoad(event) {
+        // set the source of the file. This will be a Data URL so that the Video Element can load
+        // the file as a remote object
+        source.src = event.target.result
+        videoElement.load()
+        canvasElement.classList.add('shown')
+
+        const frameProcessing = (now, metadata)=>{
+          // call the MediaPipe Face Detection
+          processFrame()
+          // Re-register the callback to perform on next frame
+          videoElement.requestVideoFrameCallback(frameProcessing)
+        }
+        // register the callback to perform on next frame
+        videoElement.requestVideoFrameCallback(frameProcessing)
+        // Start the video playback
+        await videoElement.play()
+      }
+
+      /**
+       * Function to do MediaPipe framework and perform framedetection
+       * This function internally calls the function registered via faceDetection.onResults()
+       */
+      async function processFrame() {
+        // Send the videoElement to the MediaPipe
+        await faceDetection.send({ image: videoElement });
+      }
+
+      // Create MediaPipe facedetection object
+      const faceDetection = new FaceDetection({
+        locateFile: (file) => {
+          return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+        }
+      });
+      // Set face detection properties
+      faceDetection.setOptions({
+        model: 'full',
+        minDetectionConfidence: 0.5
+      });
+      // Set callback to perform once MediaPipe has performed its operations and 
+      // results are provided back
+      faceDetection.onResults(onResults)
+
+      inputTag.addEventListener('change', readVideo)
+    </script>
+  </body>
+</html>
