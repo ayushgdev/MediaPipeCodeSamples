@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Face Detection using secondary webcam devices</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"
+      crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <video controls id="video-tag" autoplay hidden>
+      <source src="" id="source-tag" />
+    </video>
+    <canvas class="output_canvas" width="640" height="480"></canvas>
+
+    <script type="module">
+      const videoElement = document.getElementById('video-tag')
+      const source = document.getElementById('source-tag')
+
+      const canvasElement = document.getElementsByClassName('output_canvas')[0];
+      const canvasCtx = canvasElement.getContext('2d');
+
+      /**
+       * Function to execute once the results from the MediaPipe framework are received
+       */
+      function onResults(results) {
+        // Draw the overlays.
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(
+          results.image, 0, 0, canvasElement.width, canvasElement.height);
+        if (results.detections.length > 0) {
+          drawRectangle(
+            canvasCtx, results.detections[0].boundingBox,
+            { color: 'white', lineWidth: 2, fillColor: '#00000000' });
+          drawLandmarks(canvasCtx, results.detections[0].landmarks, {
+            color: 'lightblue',
+            radius: 1,
+          });
+        }
+        canvasCtx.restore();
+      }
+
+      /**
+       * Function to enumerate over all available audio/video devices and get particular 
+       * device media stream. Once the stream is available, send it to <video> tag so that 
+       * video.requestVideoFrameCallback can be used to process each frame of the video.
+       * So the <video> tag works as a proxy to get each frame
+       */
+      async function onload() {
+        var errorCallback = function (e) {
+          console.log('Rejected!', e);
+        };
+        var devices = await navigator.mediaDevices.enumerateDevices()
+        // filter for only video devices
+        devices = devices.filter(d => d.kind == 'videoinput')
+        // get the device id of the required device
+        let targetDevice = devices[0].deviceId // change the index as per your device selection
+        
+        navigator.getUserMedia({
+          video: {
+            deviceId: targetDevice
+          }, audio: true
+        }, function (localMediaStream) {
+          var video = document.querySelector('video');
+          video.srcObject = localMediaStream
+
+          // Note: onloadedmetadata doesn't fire in Chrome when using it with getUserMedia.
+          // See crbug.com/110938.
+          video.onloadedmetadata = function (e) {
+            // Ready to go. Do some stuff.
+            const frameProcessing = (now, metadata) => {
+              // call the MediaPipe Face Detection
+              processFrame()
+              // Re-register the callback to perform on next frame
+              videoElement.requestVideoFrameCallback(frameProcessing)
+            }
+            // register the callback to perform on next frame
+            videoElement.requestVideoFrameCallback(frameProcessing)
+
+          };
+        }, errorCallback);
+      }
+      /**
+       * Function to do MediaPipe framework and perform framedetection
+       * This function internally calls the function registered via faceDetection.onResults()
+       */
+      async function processFrame() {
+        // Send the videoElement to the MediaPipe
+        await faceDetection.send({ image: videoElement });
+      }
+
+      // Create MediaPipe facedetection object
+      const faceDetection = new FaceDetection({
+        locateFile: (file) => {
+          return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/${file}`;
+        }
+      });
+      // Set face detection properties
+      faceDetection.setOptions({
+        model: 'full',
+        minDetectionConfidence: 0.5
+      });
+      // Set callback to perform once MediaPipe has performed its operations and 
+      // results are provided back
+      faceDetection.onResults(onResults)
+      
+      onload()
+    </script>
+  </body>
+</html>
