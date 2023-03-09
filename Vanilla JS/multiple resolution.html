@@ -77,12 +77,13 @@
             video.onloadedmetadata = function (e) {
                 // Ready to go. Do some stuff.
                 const frameProcessing = (now, metadata) => {
-        canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+                  // Uncomment the following line to test the webcam canvas output without mediapipe processing
+                  // canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
-                    // call the MediaPipe Face Detection
-                    // processFrame()
-                    // Re-register the callback to perform on next frame
-                    videoElement.requestVideoFrameCallback(frameProcessing)
+                  // call the MediaPipe Face Detection
+                  processFrame()
+                  // Re-register the callback to perform on next frame
+                  videoElement.requestVideoFrameCallback(frameProcessing)
                 }
                 // register the callback to perform on next frame
                 videoElement.requestVideoFrameCallback(frameProcessing)
