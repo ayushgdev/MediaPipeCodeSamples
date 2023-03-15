@@ -50,6 +50,7 @@
         // Draw the overlays.
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         if (results.detections.length > 0) {
           drawRectangle(
             canvasCtx, results.detections[0].boundingBox,
@@ -77,10 +78,10 @@
             video.onloadedmetadata = function (e) {
                 // Ready to go. Do some stuff.
                 const frameProcessing = (now, metadata) => {
-                  // Uncomment the following line to test the webcam canvas output without mediapipe processing
-                  // canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-
+                  canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+                  
                   // call the MediaPipe Face Detection
+                  // Comment the following line to test the webcam canvas output without mediapipe processing
                   processFrame()
                   // Re-register the callback to perform on next frame
                   videoElement.requestVideoFrameCallback(frameProcessing)
