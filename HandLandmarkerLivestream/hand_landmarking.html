@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="demo.js" type="module"></script>
+</head>
+<body>
+  <h1>Hand landmark detection using the MediaPipe HandLandmarker task</h1>
+
+  <section>
+    <h2>Demo: Webcam continuous hands landmarks detection</h2>
+    <p>Hold your hand in front of your webcam to get real-time hand landmarker detection</p>
+    <div id="liveView" class="videoView">
+     
+      <div style="position: relative;">
+        <video id="webcam" style="position: abso" autoplay playsinline></video>
+        <canvas class="output_canvas" id="output_canvas" style="position: absolute; left: 0px; top: 0px;"></canvas>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
